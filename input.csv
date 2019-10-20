@@ -1,4 +1,4 @@
-VM Name,Cores,Memory,Storage,RequiresSSD,UseRI,RIDuration
+VM Name,Cores,Memory,Storage,RequiresSSD,PreferRI,RIDuration
 A1,1,2,120,true,false,0
 A2,2,4,120,true,false,0
 A3,3,6,120,true,false,0
