@@ -6,8 +6,8 @@ var readServersFromCSV = async function(csvFile) {
     return csvtojsonV2().fromFile(csvFile);
 };
 
-var getDataFromComputeApi = async function() {
-    const url = 'https://azure.microsoft.com/api/v2/pricing/virtual-machines-base/calculator/';
+var getDataFromComputeAPIV3 = async function() {
+    const url = 'https://azure.microsoft.com/api/v3/pricing/virtual-machines/calculator/';
     var response = await fetch(url);
     var rawData = await response.json();
     var offers = rawData.offers;
@@ -30,23 +30,24 @@ var match = async function(servers, SKUs, region) {
             .filter(SKU => SKU.ram >= serverMemory)
             .filter(SKU => !SKU.series.startsWith('A'))
             .filter(SKU => !SKU.series.startsWith('N'))
-            .filter(SKU => !!SKU.prices[region])
+            .filter(SKU => (server.UseRI == 'false' && !!SKU.prices.perhour && !!SKU.prices.perhour[region]) |
+                            server.UseRI == 'true' && !!SKU.prices.perhourreservedoneyear || )
             .filter(SKU => server.RequiresSSD == 'true' ? SKU.series.includes('s') : !SKU.series.includes('s'))
             .filter(SKU => !SKU.name.includes('lowpriority'))
-            .sort((first,second) => (first.prices[region].value > second.prices[region].value) ? 1 : -1);
+            .sort((first,second) => (first.prices.perhour[region].value > second.prices.perhour[region].value) ? 1 : -1);
 
         candidates.forEach(SKU => {
-            SKU.price = SKU.prices[region].value;
+            SKU.price = SKU.prices.perhour[region].value;
         });
 
-        server.candidates = candidates[0];
+        server.Match = candidates[0];
     });
     return servers;
 };
 
 var main = async function() {
     var servers = await readServersFromCSV(csvFilePath);
-    var azureInstances = await getDataFromComputeApi();
+    var azureInstances = await getDataFromComputeAPIV3();
 
     var matches = await match(servers, azureInstances, 'europe-west');
     console.log(matches);
